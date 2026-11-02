@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>方案B 工作台示例</title>
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--line:#2a2f3a;--text:#e8eaed;
+        --muted:#9aa3b1;--brand:#3ddc84;--brand-dim:#1f6b45}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  header{padding:20px 24px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 12px;font-size:16px;font-weight:600}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .bar label{color:var(--muted);font-size:12px}
+  input{flex:1;min-width:220px;padding:8px 10px;border-radius:6px;
+        border:1px solid var(--line);background:#0b0d11;color:var(--text);
+        font:13px ui-monospace,Menlo,Consolas,monospace}
+  main{padding:8px 24px 24px}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;color:var(--muted);font-size:12px;font-weight:400;
+     padding:12px 8px;border-bottom:1px solid var(--line)}
+  td{padding:14px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .t{font-weight:500;margin-bottom:2px}
+  .m{color:var(--muted);font-size:12px}
+  .btn{padding:6px 14px;border-radius:6px;border:1px solid var(--brand);
+       background:var(--brand);color:#04240f;font-weight:600;cursor:pointer}
+  .btn.ghost{background:transparent;color:var(--brand);border-color:var(--brand-dim)}
+  .btn:active{transform:scale(.97)}
+  .pill{display:inline-block;margin-right:4px;padding:1px 8px;border-radius:99px;
+        background:#1d2430;color:var(--muted);font-size:12px}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);
+         background:#04240f;color:var(--brand);border:1px solid var(--brand-dim);
+         padding:8px 16px;border-radius:8px;opacity:0;transition:.18s;pointer-events:none;
+         max-width:90vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  .note{color:var(--muted);font-size:12px;padding:12px 0 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>待发消息</h1>
+  <div class="bar">
+    <label for="base">落地页根地址</label>
+    <input id="base" value="https://s.yourdomain.com">
+  </div>
+</header>
+
+<main>
+  <table>
+    <thead>
+      <tr><th>消息</th><th style="width:130px">复制</th><th style="width:100px">预览</th></tr>
+    </thead>
+    <tbody id="rows">
+      <tr data-id="3f9a2c1b">
+        <td>
+          <div class="t">央行发布三季度货币政策执行报告</div>
+          <div class="m">10-30 09:12 · <span class="pill">A群</span><span class="pill">B群</span><span class="pill">C群</span></div>
+        </td>
+        <td><button class="btn" data-copy="link">复制链接</button></td>
+        <td><a class="btn ghost" data-open target="_blank" rel="noopener">打开</a></td>
+      </tr>
+      <tr data-id="7b2e88d4">
+        <td>
+          <div class="t">证监会就程序化交易管理规定征求意见</div>
+          <div class="m">10-30 10:05 · <span class="pill">A群</span></div>
+        </td>
+        <td><button class="btn" data-copy="link">复制链接</button></td>
+        <td><a class="btn ghost" data-open target="_blank" rel="noopener">打开</a></td>
+      </tr>
+      <tr data-id="c14f09a7">
+        <td>
+          <div class="t">某券商固收月报：利率还能下行多久</div>
+          <div class="m">10-30 11:40 · <span class="pill">B群</span><span class="pill">C群</span></div>
+        </td>
+        <td><button class="btn" data-copy="link">复制链接</button></td>
+        <td><a class="btn ghost" data-open target="_blank" rel="noopener">打开</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="note">示例数据。改上面的根地址后，复制出来的链接就是 <code>根地址/a/{msgid}.html</code>。</p>
+</main>
+
+<div id="toast"></div>
+
+<script>
+  const baseInput = document.getElementById('base');
+  const toastEl = document.getElementById('toast');
+  const rows = document.getElementById('rows');
+
+  function urlOf(id){
+    const base = baseInput.value.trim().replace(/\/+$/,'');
+    return base + '/a/' + id + '.html';
+  }
+
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('on');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toastEl.classList.remove('on'), 1800);
+  }
+
+  async function copy(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      return true;
+    }catch(e){
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try{ ok = document.execCommand('copy'); }catch(_){}
+      ta.remove();
+      return ok;
+    }
+  }
+
+  function openLink(a){
+    a.href = urlOf(a.closest('tr').dataset.id);
+  }
+
+  function refreshOpenLinks(){
+    rows.querySelectorAll('[data-open]').forEach(openLink);
+  }
+
+  rows.addEventListener('click', async (e) => {
+    const openA = e.target.closest('[data-open]');
+    if(openA){ openLink(openA); return; }
+
+    const btn = e.target.closest('[data-copy]');
+    if(!btn) return;
+    const id = btn.closest('tr').dataset.id;
+    const url = urlOf(id);
+    const ok = await copy(url);
+    toast(ok ? '已复制：' + url : '复制失败，请手动选择链接');
+  });
+
+  baseInput.addEventListener('input', refreshOpenLinks);
+  refreshOpenLinks();
+</script>
+</body>
+</html>
